@@ -1,4 +1,6 @@
+import os
 import torch
+import requests
 import torchvision
 from tqdm import tqdm
 import torchvision.transforms as transforms
@@ -27,8 +29,21 @@ testset = torchvision.datasets.CIFAR10(root='./data', train=False,
 testloader = torch.utils.data.DataLoader(testset, batch_size=128,
                                          shuffle=False)
 
-# Define ResNet-18 model
-net = torchvision.models.resnet18(pretrained=False, num_classes=10)
+local_path = "weights_resnet18_cifar10.pth"
+if not os.path.exists(local_path):
+    response = requests.get(
+        "https://storage.googleapis.com/unlearning-challenge/weights_resnet18_cifar10.pth"
+    )
+    open(local_path, "wb").write(response.content)
+
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+weights_pretrained = torch.load(local_path, map_location=DEVICE)
+
+# load model with pre-trained weights
+net = torchvision.models.resnet18(weights=None, num_classes=10)
+net.load_state_dict(weights_pretrained)
+net.to(DEVICE)
+net.eval()
 
 # Define loss function and optimizer
 criterion = torch.nn.CrossEntropyLoss()

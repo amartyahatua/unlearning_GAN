@@ -8,7 +8,7 @@ import torchvision.transforms as transforms
 import torchvision.datasets as dsets
 from sklearn import decomposition
 from matplotlib import pyplot as plt
-from MulticoreTSNE import MulticoreTSNE as TSNE
+#from MulticoreTSNE import MulticoreTSNE as TSNE
 import torch
 import torchvision
 import torchvision.transforms as transforms

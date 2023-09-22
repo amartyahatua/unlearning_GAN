@@ -17,7 +17,7 @@ import numpy as np
 from torchvision.models import resnet18
 from metrics import Metrics
 
-
+print(torch.__version__)
 class LoadData:
     def __init__(self):
         normalize = transforms.Compose(
@@ -89,7 +89,7 @@ if not os.path.exists(local_path):
 weights_pretrained = torch.load(local_path, map_location=DEVICE)
 
 # load model with pre-trained weights
-model = resnet18(pretrained=False, num_classes=10)
+model = resnet18(weights=None, num_classes=10)
 model.load_state_dict(weights_pretrained)
 model.to(DEVICE)
 model.eval()
@@ -150,13 +150,20 @@ def unlearning(net, retain, forget, validation):
     return net
 
 
-ft_model = resnet18(pretrained=False, num_classes=10)
+ft_model = resnet18(weights=None, num_classes=10)
 ft_model.load_state_dict(weights_pretrained)
 ft_model.to(DEVICE)
 
 # Execute the unlearing routine. This might take a few minutes.
 # If run on colab, be sure to be running it on  an instance with GPUs
-for i in range(3):
+
+ft_model = unlearning(ft_model, data.retain_loader, data.forget_loader, data.test_loader)
+print(f"Retain set accuracy: {100.0 * metrics.accuracy(ft_model, data.retain_loader):0.1f}%")
+print(f"Forget set accuracy: {100.0 * metrics.accuracy(ft_model, data.forget_loader):0.1f}%")
+print(f"  Test set accuracy: {100.0 * metrics.accuracy(ft_model, data.test_loader):0.1f}%")
+
+
+for i in range(5):
     ft_model = unlearning(ft_model, synthetic_retain_data(), synthetic_forget_data(), data.test_loader)
     print(f"Retain set accuracy: {100.0 * metrics.accuracy(ft_model, data.retain_loader):0.1f}%")
     print(f"Forget set accuracy: {100.0 * metrics.accuracy(ft_model, data.forget_loader):0.1f}%")
