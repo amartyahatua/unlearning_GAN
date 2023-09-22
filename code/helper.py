@@ -2,6 +2,7 @@ import torch
 import torchvision
 import torch.nn as nn
 import torch.utils.data
+from data_wrapper import TrainCIFAR10
 from torch.utils.data import TensorDataset, DataLoader
 
 # checking the availability of cuda devices
@@ -19,6 +20,7 @@ ndf = 64
 nc = 3
 batch_size = 128
 
+cifar_data = TrainCIFAR10()
 
 # custom weights_gan initialization called on netG and netD
 def weights_init(m):
@@ -69,12 +71,14 @@ def synthetic_forget_data():
     netG = Generator(ngpu).to(device)
     netG.apply(weights_init)
     # load weights_gan to test the model
-    netG.load_state_dict(torch.load('weights_fgan/netG_epoch_24.pth'))
+    netG.load_state_dict(torch.load('../weights_fgan/netG_epoch_24.pth'))
     noise = torch.randn(batch_size, nz, 1, 1, device=device)
     fs_data = netG(noise)
     label = 9 - get_class(fs_data)
     fs_data = TensorDataset(fs_data, label)
-    fs_data = DataLoader(fs_data, batch_size=128)
+    cifar_forget = cifar_data.forget_set
+    fs_data_temp = torch.utils.data.ConcatDataset([fs_data, cifar_forget])
+    fs_data = DataLoader(fs_data_temp, batch_size=128)
     return fs_data
 
 
@@ -82,18 +86,23 @@ def synthetic_retain_data():
     netG = Generator(ngpu).to(device)
     netG.apply(weights_init)
     # load weights_gan to test the model
-    netG.load_state_dict(torch.load('weights_rgan/netG_epoch_24.pth'))
+    netG.load_state_dict(torch.load('../weights_rgan/netG_epoch_24.pth'))
     noise = torch.randn(batch_size, nz, 1, 1, device=device)
     rs_data = netG(noise)
     label = get_class(rs_data)
     rs_data = TensorDataset(rs_data, label)
-    rs_data = DataLoader(rs_data, batch_size=128)
+    cifar_retain = cifar_data.retain_set
+    rs_data_temp = torch.utils.data.ConcatDataset([rs_data, cifar_retain])
+    rs_data = DataLoader(rs_data_temp, batch_size=128)
     return rs_data
 
 
 def get_class(data):
     net = torchvision.models.resnet18(pretrained=False, num_classes=10)
-    net.load_state_dict(torch.load('weight_classification/classification_weights.pth'))
+    net.load_state_dict(torch.load('../weight_classification/classification_weights.pth'))
     outputs = net(data)
     _, predicted = torch.max(outputs.data, 1)
     return predicted
+
+
+synthetic_retain_data()
