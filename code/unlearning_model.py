@@ -69,11 +69,11 @@ class LoadData:
         self.val_loader = torch.utils.data.DataLoader(val_set, batch_size=128, shuffle=False)
 
         # split train set into a forget and a retain set
-        forget_set = torch.utils.data.Subset(dataset, forget_idx)
-        forget_set = torch.utils.data.Subset(dataset, retain_idx)
+        self.forget_set = torch.utils.data.Subset(dataset, forget_idx)
+        self.retain_set = torch.utils.data.Subset(dataset, retain_idx)
 
-        self.forget_loader = torch.utils.data.DataLoader(forget_set, batch_size=128, shuffle=True)
-        self.retain_loader = torch.utils.data.DataLoader(forget_set, batch_size=128, shuffle=True, generator=RNG)
+        self.forget_loader = torch.utils.data.DataLoader(self.forget_set, batch_size=128, shuffle=True)
+        self.retain_loader = torch.utils.data.DataLoader(self.retain_set, batch_size=128, shuffle=True, generator=RNG)
 
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
@@ -149,7 +149,7 @@ def unlearning(net, retain, forget, validation):
     net.eval()
     return net
 
-
+synthetic_retain_data(data.retain_loader)
 ft_model = resnet18(weights=None, num_classes=10)
 ft_model.load_state_dict(weights_pretrained)
 ft_model.to(DEVICE)
